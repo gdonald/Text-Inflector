@@ -1,0 +1,17 @@
+use v6.d;
+use lib 'lib';
+use Test;
+use Text::Inflector;
+
+plan 5;
+
+Text::Inflector.inflections: {
+  .irregular('cow', 'kine');
+  .uncountable('aircraft');
+}
+
+is Text::Inflector.pluralize('cow'), 'kine',         'process-wide rules pluralize an irregular word';
+is Text::Inflector.singularize('kine'), 'cow',       'process-wide rules singularize an irregular word';
+is Text::Inflector.pluralize('aircraft'), 'aircraft', 'process-wide rules leave an uncountable word alone';
+is Text::Inflector.tableize('Cow'), 'kine',          'process-wide rules change the table name of a class';
+is Text::Inflector.new.pluralize('cow'), 'cows',     'a separate instance stays on the built-in rules';

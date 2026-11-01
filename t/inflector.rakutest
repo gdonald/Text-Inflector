@@ -1,0 +1,131 @@
+use v6.d;
+use lib 'lib';
+use Test;
+use Text::Inflector;
+
+plan 87;
+
+my $inflector = Text::Inflector.new;
+
+# built-in rules
+is $inflector.pluralize('lead'), 'leads', 'pluralize adds an s to a regular word';
+is $inflector.pluralize('category'), 'categories', 'pluralize turns a consonant y into ies';
+is $inflector.pluralize('address'), 'addresses', 'pluralize adds es after ss';
+is $inflector.pluralize('status'), 'statuses', 'pluralize adds es to status';
+is $inflector.pluralize('knife'), 'knives', 'pluralize turns a trailing fe into ves';
+is $inflector.pluralize('shelf'), 'shelves', 'pluralize turns a trailing lf into lves';
+is $inflector.pluralize('person'), 'people', 'pluralize uses the irregular plural of person';
+is $inflector.pluralize('child'), 'children', 'pluralize uses the irregular plural of child';
+is $inflector.pluralize('foot'), 'feet', 'pluralize uses the irregular plural of foot';
+is $inflector.pluralize('deer'), 'deer', 'pluralize leaves deer alone';
+is $inflector.pluralize('equipment'), 'equipment', 'pluralize leaves an uncountable word alone';
+is $inflector.pluralize('people'), 'people', 'pluralize leaves an already plural irregular word alone';
+is $inflector.pluralize('line-item'), 'line-items', 'pluralize pluralizes only the last dashed word';
+is $inflector.pluralize('lead_status'), 'lead_statuses', 'pluralize pluralizes only the last underscored word';
+is $inflector.pluralize('sales-person'), 'sales-people', 'pluralize applies an irregular to the last word of a compound';
+is $inflector.pluralize('Person'), 'People', 'pluralize keeps a capitalized irregular capitalized';
+is $inflector.pluralize(''), '', 'pluralize returns an empty word unchanged';
+is $inflector.pluralize('ox'), 'oxen', 'pluralize turns ox into oxen';
+is $inflector.pluralize('matrix'), 'matrices', 'pluralize turns matrix into matrices';
+is $inflector.singularize('leads'), 'lead', 'singularize drops the s from a regular word';
+is $inflector.singularize('categories'), 'category', 'singularize turns ies into y';
+is $inflector.singularize('addresses'), 'address', 'singularize drops es after ss';
+is $inflector.singularize('statuses'), 'status', 'singularize drops es from statuses';
+is $inflector.singularize('status'), 'status', 'singularize leaves a singular status alone';
+is $inflector.singularize('address'), 'address', 'singularize leaves a word ending in ss alone';
+is $inflector.singularize('knives'), 'knife', 'singularize turns ves into fe';
+is $inflector.singularize('shelves'), 'shelf', 'singularize turns lves into lf';
+is $inflector.singularize('people'), 'person', 'singularize uses the irregular singular of people';
+is $inflector.singularize('sheep'), 'sheep', 'singularize leaves an uncountable word alone';
+is $inflector.singularize('data'), 'datum', 'singularize turns data into datum';
+is $inflector.singularize('line-items'), 'line-item', 'singularize singularizes only the last dashed word';
+is $inflector.singularize('analyses'), 'analysis', 'singularize turns analyses into analysis';
+is $inflector.singularize('matrices'), 'matrix', 'singularize turns matrices into matrix';
+is $inflector.singularize('databases'), 'database', 'singularize turns databases into database';
+is $inflector.camelize('tenant'), 'Tenant', 'camelize capitalizes a single word';
+is $inflector.camelize('line-item'), 'LineItem', 'camelize joins dashed words';
+is $inflector.camelize('user_exercise'), 'User_exercise', 'camelize treats an underscore as part of the word';
+is $inflector.classify('line-items'), 'LineItem', 'classify singularizes and camelizes a plural name';
+is $inflector.classify('people'), 'Person', 'classify classifies an irregular plural';
+is $inflector.classify('categories'), 'Category', 'classify classifies a consonant y plural';
+is $inflector.underscore('PageTag'), 'page_tag', 'underscore snake_cases a camel-case name';
+is $inflector.underscore('App::Models::LineItem'), 'line_item', 'underscore strips the namespace';
+is $inflector.underscore('HTTPRequest'), 'http_request', 'underscore keeps an uppercase run together';
+is $inflector.underscore('line-item'), 'line_item', 'underscore turns a dash into an underscore';
+is $inflector.tableize('LineItem'), 'line_items', 'tableize snake_cases and pluralizes a class name';
+is $inflector.tableize('Person'), 'people', 'tableize pluralizes an irregular class name';
+is $inflector.tableize('Category'), 'categories', 'tableize pluralizes a consonant y class name';
+is $inflector.tableize('LeadStatus'), 'lead_statuses', 'tableize pluralizes a multi-word class name ending in status';
+is $inflector.foreign-key('App::Models::UserExercise'), 'user_exercise_id', 'foreign-key snake_cases the base class name and adds _id';
+
+# app overrides
+sub with-rules(&rules --> Text::Inflector) {
+  my $instance = Text::Inflector.new;
+  $instance.inflections: &rules;
+  $instance
+}
+
+my $irregular = with-rules({ .irregular('octopus', 'octopi') });
+is $irregular.pluralize('octopus'), 'octopi',  'an irregular override pluralizes';
+is $irregular.singularize('octopi'), 'octopus', 'an irregular override singularizes';
+
+is with-rules({ .irregular('fish', 'fishes') }).pluralize('fish'), 'fishes', 'an irregular override replaces an uncountable word';
+
+my $uncountable = with-rules({ .uncountable('aircraft') });
+is $uncountable.pluralize('aircraft'), 'aircraft',   'an uncountable override leaves the plural alone';
+is $uncountable.singularize('aircraft'), 'aircraft', 'an uncountable override leaves the singular alone';
+
+is with-rules({ .plural(rx:i/ ^ (cact) us $ /, '$0i') }).pluralize('cactus'), 'cacti',    'a plural rule pluralizes';
+is with-rules({ .singular(rx:i/ ^ (cact) i $ /, '$0us') }).singularize('cacti'), 'cactus', 'a singular rule singularizes';
+
+my $acronym = with-rules({ .acronym('API') });
+is $acronym.camelize('api-key'), 'APIKey',       'an acronym camelizes';
+is $acronym.classify('api-keys'), 'APIKey',      'an acronym classifies';
+is $acronym.underscore('APIKey'), 'api_key',     'an acronym at the start underscores';
+is $acronym.underscore('PublicAPI'), 'public_api', 'an acronym at the end underscores';
+
+is with-rules({ .plural(rx:i/ (stat) us $ /, '$0i') }).pluralize('status'), 'stati', 'an app rule overrides a built-in rule';
+
+my $newer = with-rules({
+  .plural(rx:i/ (cact) us $ /, '$0uses');
+  .plural(rx:i/ (cact) us $ /, '$0i');
+});
+is $newer.pluralize('cactus'), 'cacti', 'the newer of two rules wins';
+
+my $direct = Text::Inflector.new;
+$direct.irregular('cow', 'kine');
+is $direct.pluralize('cow'), 'kine', 'a rule added outside an inflections block applies';
+
+# freezing
+my $fresh = Text::Inflector.new;
+nok $fresh.is-frozen, 'an inflector is not frozen before the first lookup';
+
+$fresh.pluralize('lead');
+ok $fresh.is-frozen, 'a lookup freezes the rules';
+
+throws-like { $fresh.inflections: { .uncountable('aircraft') } }, Exception, message => /'frozen'/, 'a frozen inflector refuses an inflections block';
+throws-like { $fresh.irregular('cow', 'kine') }, Exception, message => /'frozen'/,               'a frozen inflector refuses an irregular word';
+throws-like { $fresh.uncountable('aircraft') }, Exception, message => /'frozen'/,               'a frozen inflector refuses an uncountable word';
+throws-like { $fresh.plural(rx/ x $ /, 'xen') }, Exception, message => /'frozen'/,              'a frozen inflector refuses a plural rule';
+throws-like { $fresh.singular(rx/ xen $ /, 'x') }, Exception, message => /'frozen'/,            'a frozen inflector refuses a singular rule';
+throws-like { $fresh.acronym('API') }, Exception, message => /'frozen'/,                        'a frozen inflector refuses an acronym';
+
+my $frozen = Text::Inflector.new.freeze;
+throws-like { $frozen.inflections: { .uncountable('aircraft') } }, Exception, message => /'frozen'/, 'an explicit freeze refuses an inflections block';
+
+# calls on the class use the process-wide rules
+is Text::Inflector.pluralize('person'), 'people',            'pluralize on the class';
+is Text::Inflector.singularize('people'), 'person',          'singularize on the class';
+is Text::Inflector.camelize('line-item'), 'LineItem',        'camelize on the class';
+is Text::Inflector.classify('line-items'), 'LineItem',       'classify on the class';
+is Text::Inflector.underscore('LineItem'), 'line_item',      'underscore on the class';
+is Text::Inflector.tableize('LineItem'), 'line_items',       'tableize on the class';
+is Text::Inflector.foreign-key('LineItem'), 'line_item_id',  'foreign-key on the class';
+ok Text::Inflector.is-frozen,                                'the process-wide rules are frozen after a lookup';
+throws-like { Text::Inflector.inflections: { .uncountable('aircraft') } }, Exception, message => /'frozen'/, 'the class refuses an inflections block once frozen';
+throws-like { Text::Inflector.irregular('cow', 'kine') }, Exception, message => /'frozen'/, 'the class refuses an irregular word once frozen';
+throws-like { Text::Inflector.uncountable('aircraft') }, Exception, message => /'frozen'/, 'the class refuses an uncountable word once frozen';
+throws-like { Text::Inflector.plural(rx/ x $ /, 'xen') }, Exception, message => /'frozen'/, 'the class refuses a plural rule once frozen';
+throws-like { Text::Inflector.singular(rx/ xen $ /, 'x') }, Exception, message => /'frozen'/, 'the class refuses a singular rule once frozen';
+throws-like { Text::Inflector.acronym('API') }, Exception, message => /'frozen'/, 'the class refuses an acronym once frozen';
+ok Text::Inflector.freeze.is-frozen,                         'freeze on the class returns something frozen';

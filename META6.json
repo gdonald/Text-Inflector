@@ -1,0 +1,23 @@
+{
+  "name": "Text::Inflector",
+  "description": "English plural, singular, and case inflection with app-defined overrides",
+  "version": "0.9.0",
+  "api": "1",
+  "perl": "6.d",
+  "authors": ["Greg Donald"],
+  "auth": "zef:gdonald",
+  "depends": [],
+  "build-depends": [],
+  "test-depends": ["Test", "BDD::Behave:auth<zef:gdonald>"],
+  "provides": {
+    "Text::Inflector": "lib/Text/Inflector.rakumod"
+  },
+  "resources": [],
+  "support": {
+    "source": "https://github.com/gdonald/Text-Inflector.git",
+    "bugtracker": "https://github.com/gdonald/Text-Inflector/issues"
+  },
+  "license": "Artistic-2.0",
+  "tags": ["inflection", "inflector", "plural", "singular", "pluralize", "singularize", "English"],
+  "source-url": "https://github.com/gdonald/Text-Inflector.git"
+}
