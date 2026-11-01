@@ -1,5 +1,7 @@
 // Runs in the home lab's Jenkins, in one pod running the Raku CI image built
-// from raku-ci/ in the devops repo.
+// from raku-ci/ in the devops repo. When every stage passes, Jenkins reports
+// the continuous-integration/jenkins/branch status, which starts
+// .github/workflows/ci.yml on the same commit.
 
 def buildPod = '''
   apiVersion: v1

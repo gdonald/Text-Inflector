@@ -1,0 +1,39 @@
+name: CI
+
+# Runs after the home lab's Jenkins build passes and reports the
+# continuous-integration/jenkins/branch commit status. A status event runs
+# this file from the default branch, so each job checks out the commit the
+# status is for.
+on:
+  status
+
+jobs:
+  test:
+    if: github.event.context == 'continuous-integration/jenkins/branch' && github.event.state == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.sha }}
+      - uses: Raku/setup-raku@v1
+        with:
+          raku-version: 'latest'
+      - name: Raku version
+        run: raku --version
+      - name: Cache zef
+        uses: actions/cache@v4
+        with:
+          path: ~/.zef
+          key: zef-ubuntu-latest-${{ hashFiles('META6.json') }}
+          restore-keys: |
+            zef-ubuntu-latest-
+
+      - name: Install from github
+        run: |
+          zef install --/test --force-install https://github.com/gdonald/BDD-Behave.git
+      - name: Install dependencies
+        run: zef install --deps-only --/test --test-depends .
+      - name: Install prove6
+        run: zef install --/test App::Prove6
+      - name: Run tests
+        run: ./test.raku
